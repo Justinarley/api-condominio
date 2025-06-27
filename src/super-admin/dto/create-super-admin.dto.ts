@@ -8,11 +8,3 @@ export class CreateSuperAdminDto {
   @MinLength(8)
   password: string
 }
-
-export class LoginSuperAdminDto {
-  @IsEmail()
-  email: string
-
-  @IsString()
-  password: string
-}
