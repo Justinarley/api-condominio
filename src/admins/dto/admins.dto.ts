@@ -4,7 +4,7 @@ import {
   MinLength,
   IsString,
   IsOptional,
-  IsBoolean,
+  IsIn,
 } from 'class-validator'
 
 export class CreateAdminDto {
@@ -13,8 +13,11 @@ export class CreateAdminDto {
   name: string
 
   @IsEmail()
+  @IsNotEmpty()
   email: string
 
+  @IsNotEmpty()
+  @IsString()
   @MinLength(6)
   password: string
 
@@ -31,10 +34,32 @@ export class CreateAdminDto {
   identification?: string
 
   @IsOptional()
-  @IsBoolean()
-  active?: boolean
+  @IsString()
+  role?: string
+}
+export class UpdatePasswordDto {
+  @IsNotEmpty()
+  @IsString()
+  @MinLength(6)
+  password: string
+}
+
+export class UpdateStatusDto {
+  @IsNotEmpty()
+  @IsString()
+  @IsIn(['active', 'inactive'])
+  status: string
+}
+export class UpdateInfoDto {
+  @IsOptional()
+  @IsEmail()
+  email?: string
 
   @IsOptional()
   @IsString()
-  role?: string
+  phone?: string
+
+  @IsOptional()
+  @IsString()
+  address?: string
 }

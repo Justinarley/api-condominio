@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
-import { Document } from 'mongoose'
+import { Document, Types } from 'mongoose'
 
 export type AdminDocument = Admin & Document
 
@@ -23,15 +23,16 @@ export class Admin {
   @Prop()
   identification?: string
 
-  @Prop({ default: true })
-  active: boolean
-
+  @Prop({ default: 'active', enum: ['active', 'inactive'] })
+  status: string
+  
   @Prop({ default: 'admin' })
   role: string
 
-  @Prop({ type: [String], default: [] })
-  condominios: string[] // IDs de condominios si quieres relacionarlo luego
-  _id: any
+  @Prop({ type: [Types.ObjectId], ref: 'Condominio', default: [] })
+  condominios: Types.ObjectId[]
+
+  _id: Types.ObjectId
 }
 
 export const AdminSchema = SchemaFactory.createForClass(Admin)

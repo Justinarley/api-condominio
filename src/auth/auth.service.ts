@@ -1,10 +1,10 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
-import { SuperAdminService } from '../super-admin/super-admin.service'
-import { AdminsService } from '../admins/admins.service'
+import { Injectable } from '@nestjs/common'
 import { verifyPassword } from '@/utils/password'
-import { SuperAdminDocument } from '../super-admin/super-admin.schema'
 import { AdminDocument } from '../admins/admin.schemas'
+import { AdminsService } from '../admins/admins.service'
+import { SuperAdminDocument } from '../super-admin/super-admin.schema'
+import { SuperAdminService } from '../super-admin/super-admin.service'
 
 @Injectable()
 export class AuthService {
@@ -15,8 +15,8 @@ export class AuthService {
   ) {}
 
   async validateUser(email: string, password: string) {
-    // Buscar en SuperAdmins
-    const superAdmin: SuperAdminDocument | null = await this.superAdminService.findByEmail(email)
+    const superAdmin: SuperAdminDocument | null =
+      await this.superAdminService.findByEmail(email)
     if (superAdmin && verifyPassword(password, superAdmin.password)) {
       return {
         id: superAdmin._id.toString(),
@@ -25,16 +25,19 @@ export class AuthService {
       }
     }
 
-    // Buscar en Admins
-    const admin: AdminDocument | null = await this.adminsService.findByEmail(email)
-    if (admin && verifyPassword(password, admin.password)) {
+    const admin: AdminDocument | null =
+      await this.adminsService.findByEmail(email)
+    if (
+      admin &&
+      admin.status === 'active' &&
+      verifyPassword(password, admin.password)
+    ) {
       return {
         id: admin._id.toString(),
         email: admin.email,
         role: 'admin',
       }
     }
-
     return null
   }
 
