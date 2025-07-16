@@ -25,6 +25,9 @@ export class Condominio {
 
   @Prop({ type: Types.ObjectId, ref: 'Admin', required: true })
   adminId: Types.ObjectId
+
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
+  users: Types.ObjectId[]
 }
 
 export const CondominioSchema = SchemaFactory.createForClass(Condominio)
