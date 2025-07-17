@@ -26,7 +26,7 @@ export class User {
   @Prop({ required: true })
   unitNumber: string
 
-  @Prop({ required: true, enum: ['propietario', 'residente'] })
+  @Prop({ required: true, enum: ['propietario', 'residente', 'security'] })
   role: string
 
   @Prop({ required: true, min: 1 })
@@ -41,7 +41,7 @@ export class User {
   @Prop({ required: true })
   emergencyContactPhone: string
 
-  @Prop({ required: true, enum: ['active', 'inactive'], default: 'active' })
+  @Prop({ required: true, enum: ['active', 'inactive'], default: 'inactive' })
   status: string
 
   @Prop({ maxlength: 250 })

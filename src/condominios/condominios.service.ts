@@ -35,19 +35,77 @@ export class CondominiosService {
       throw new NotFoundException('Admin no encontrado')
     }
 
-    // Crear condominio
-    const created = new this.condominioModel({
-      ...dto,
-      adminId: admin._id,
-    })
+    // Función para generar departamentos para una torre
+    function generarDepartamentos(
+      torreIdentificador: string,
+      cantidad: number,
+    ) {
+      return Array.from({ length: cantidad }, (_, i) => {
+        const codigo = `${torreIdentificador.toUpperCase()}${String(i + 1).padStart(2, '0')}`
+        return { codigo, nombre: `Departamento ${codigo}` }
+      })
+    }
 
+    // Función para generar casas
+    function generarCasas(casaIdentificador: string, cantidad: number) {
+      return Array.from({ length: cantidad }, (_, i) => {
+        const codigo = `${casaIdentificador.toUpperCase()}${String(i + 1).padStart(2, '0')}`
+        return { codigo, nombre: `Casa ${codigo}` }
+      })
+    }
+
+    // Construimos el objeto que guardaremos
+    const condominioData: Partial<Condominio> = {
+      id: dto.id,
+      name: dto.name,
+      address: dto.address,
+      email: dto.email,
+      phone: dto.phone,
+      tipo: dto.tipo,
+      adminId: admin._id,
+      status: 'active',
+      users: [],
+    }
+
+    if (dto.tipo === 'torres') {
+      if (!dto.torres || dto.torres.length === 0) {
+        throw new ConflictException(
+          'Debe especificar al menos una torre con departamentos',
+        )
+      }
+      condominioData.torres = dto.torres.map((torre) => ({
+        identificador: torre.identificador.toUpperCase(),
+        departamentos: torre.departamentos,
+        departamentosDetalles: generarDepartamentos(
+          torre.identificador,
+          torre.departamentos,
+        ),
+      }))
+    } else if (dto.tipo === 'casas') {
+      if (!dto.casas || dto.casas.length === 0) {
+        throw new ConflictException(
+          'Debe especificar al menos un identificador de casas con cantidad',
+        )
+      }
+      condominioData.casas = dto.casas.map((casa) => ({
+        identificador: casa.identificador.toUpperCase(),
+        cantidad: casa.cantidad,
+        casasDetalles: generarCasas(casa.identificador, casa.cantidad),
+      }))
+    }
+
+    // Crear y guardar el condominio
+    const created = new this.condominioModel(condominioData)
     const saved = await created.save()
 
-    // Actualiza el admin para incluir este condominio en su lista
+    // Actualizar el admin con el condominio creado
     await this.adminModel.findByIdAndUpdate(admin._id, {
       $push: { condominios: saved._id },
     })
-
+    console.log(
+      'Condominio a guardar:',
+      JSON.stringify(condominioData, null, 2),
+    )
     return saved
   }
 

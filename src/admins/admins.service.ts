@@ -30,6 +30,10 @@ export class AdminsService {
     return this.adminModel.find().exec()
   }
 
+  async findActivos(): Promise<Admin[]> {
+  return this.adminModel.find({ status: 'active' }).exec()
+}
+
   async findOneById(id: string): Promise<AdminDocument> {
     if (!Types.ObjectId.isValid(id)) throw new NotFoundException('ID inválido')
     const admin = await this.adminModel.findById(id).exec()

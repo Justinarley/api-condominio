@@ -29,6 +29,11 @@ export class AdminsController {
     return this.adminsService.findAll()
   }
 
+  @Get('actives')
+async findActivos() {
+  return this.adminsService.findActivos()
+}
+
   @Get(':id')
   async findOneById(@Param('id') id: string) {
     return this.adminsService.findOneById(id)
