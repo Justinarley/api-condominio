@@ -20,7 +20,7 @@ export class Admin {
   @Prop({ required: true })
   address: string
 
-  @Prop()
+  @Prop({ required: true, unique: true})
   identification?: string
 
   @Prop({ default: 'active', enum: ['active', 'inactive'] })

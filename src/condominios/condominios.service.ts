@@ -98,7 +98,6 @@ export class CondominiosService {
     const created = new this.condominioModel(condominioData)
     const saved = await created.save()
 
-    // Actualizar el admin con el condominio creado
     await this.adminModel.findByIdAndUpdate(admin._id, {
       $push: { condominios: saved._id },
     })

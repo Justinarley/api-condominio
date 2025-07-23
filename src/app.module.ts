@@ -8,6 +8,7 @@ import { AdminsModule } from './admins/admins.module'
 import { AuthModule } from './auth/auth.module'
 import { CondominiosModule } from './condominios/condominios.module'
 import { UsuariosModule } from './usuarios/usuarios.module'
+import { ReportesModule } from './reportes/reportes.module'
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { UsuariosModule } from './usuarios/usuarios.module'
     AuthModule,
     CondominiosModule,
     UsuariosModule,
+    ReportesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
