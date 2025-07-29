@@ -4,8 +4,8 @@ import generateReport from './report'
 export interface DataToBuffer {
   data?: any[]
   other: {
-    endDate: Date | string
-    startDate: Date | string
+    endDate?: Date | string
+    startDate?: Date | string
     generationDate: Date | string
   }
 }

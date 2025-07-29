@@ -15,10 +15,6 @@ function generateBuffer(data: object, dirTemplate: string) {
 
 export default function generateReport(data: object, path: string) {
   debug('generando reporte excel')
-  const dir = join(
-    __dirname.replace('dist', ''),
-    '../',
-    path.replace('@', '')
-  )
-  return Buffer.from(generateBuffer(data, dir), 'binary') 
+  const dir = join(__dirname.replace('dist', ''), '../', path.replace('@', ''))
+  return Buffer.from(generateBuffer(data, dir), 'binary')
 }
