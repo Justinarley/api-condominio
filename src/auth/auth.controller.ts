@@ -13,7 +13,7 @@ export class AuthController {
       loginDto.password,
     )
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials')
+      throw new UnauthorizedException('Credenciales inválidas')
     }
     return this.authService.login(user)
   }

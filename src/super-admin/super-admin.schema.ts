@@ -9,6 +9,9 @@ export class SuperAdmin {
   @Prop({ required: true })
   password: string
 
+  @Prop({ required: true })
+  name: string
+
   @Prop({ default: 'super_admin' })
   role: string
 }
@@ -20,4 +23,5 @@ export interface SuperAdminDocument extends Document {
   email: string
   password: string
   role: string
+  name?: string
 }

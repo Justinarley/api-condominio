@@ -24,8 +24,8 @@ export async function fileResponse({
 
   const mimetype = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
-  res.header('Content-Disposition', `attachment; filename=${filename}`)
-  res.header('Content-Length', buffer.length.toString())
-  res.header('Content-Type', mimetype)
+  res.setHeader('Content-Disposition', `attachment; filename=${filename}`)
+  res.setHeader('Content-Length', buffer.length.toString())
+  res.setHeader('Content-Type', mimetype)
   res.end(buffer)
 }

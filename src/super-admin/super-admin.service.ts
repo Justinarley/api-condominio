@@ -32,6 +32,7 @@ export class SuperAdminService {
     const sa = new this.superAdminModel({
       email: dto.email,
       password: passwordHash,
+      name: dto.name,
     })
 
     return sa.save()

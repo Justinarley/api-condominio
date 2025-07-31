@@ -7,4 +7,8 @@ export class CreateSuperAdminDto {
   @IsString()
   @MinLength(8)
   password: string
+
+  @IsString()
+  @MinLength(8)
+  name: string
 }

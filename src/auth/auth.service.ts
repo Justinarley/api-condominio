@@ -22,6 +22,7 @@ export class AuthService {
         id: superAdmin._id.toString(),
         email: superAdmin.email,
         role: 'super_admin',
+        name: superAdmin.name,
       }
     }
 
@@ -36,6 +37,7 @@ export class AuthService {
         id: admin._id.toString(),
         email: admin.email,
         role: 'admin',
+        name: admin.name,
       }
     }
     return null
