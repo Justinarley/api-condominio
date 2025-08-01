@@ -1,7 +1,6 @@
+import * as dayjs from 'dayjs';
 import { Injectable } from '@nestjs/common'
 import { InjectModel } from '@nestjs/mongoose'
-import * as dayjs from 'dayjs'
-import { Dayjs } from 'dayjs'
 import { Model } from 'mongoose'
 import { Response } from 'express'
 import { AdminDocument } from '@/admins/admin.schemas'
@@ -25,8 +24,8 @@ export class ReporteAdminsService {
   }
 
   async generarExcel(fechaInicio: string, fechaFin: string, res: Response) {
-    const startDate: Dayjs = dayjs(fechaInicio, 'YYYY-MM-DD')
-    const endDate: Dayjs = dayjs(fechaFin, 'YYYY-MM-DD')
+    const startDate = dayjs(fechaInicio, 'YYYY-MM-DD')
+    const endDate = dayjs(fechaFin, 'YYYY-MM-DD')
     const admins = await this.generarPorFechas(
       startDate.toISOString(),
       endDate.toISOString(),

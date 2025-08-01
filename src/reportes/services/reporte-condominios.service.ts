@@ -1,4 +1,4 @@
-import dayjs from 'dayjs'
+import * as dayjs from 'dayjs';
 import { Response } from 'express'
 import { Model, Types } from 'mongoose'
 import { Injectable } from '@nestjs/common'
