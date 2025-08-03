@@ -4,48 +4,72 @@ import { User, UserDocument } from './usuarios.schema'
 import { UpdateStatusDto } from '@/admins/dto/admins.dto'
 import { Injectable, NotFoundException } from '@nestjs/common'
 import { hashPassword, verifyPassword } from '@/utils/password'
-import { Condominio, CondominioDocument } from '@/condominios/condominio.schema'
 import {
   CreateResidentUserDto,
   UpdateInfoDto,
   UpdatePasswordDto,
 } from './dto/usuarios.dto'
+import {
+  Departamento,
+  DepartamentoDocument,
+} from '@/departamentos/departamento.schema'
 
 @Injectable()
 export class UsuariosService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
-    @InjectModel(Condominio.name)
-    private condominioModel: Model<CondominioDocument>,
+    @InjectModel(Departamento.name)
+    private departamentoModel: Model<DepartamentoDocument>,
   ) {}
 
   async create(createUserDto: CreateResidentUserDto): Promise<User> {
-    // Validar que el condominio exista
-    const condominio = await this.condominioModel.findById(
-      createUserDto.condominioId,
-    )
-    if (!condominio) {
-      throw new NotFoundException('Condominio no encontrado')
+    const dataToSave: any = {
+      ...createUserDto,
+      password: hashPassword(createUserDto.password),
+      status: 'inactive',
     }
 
-    const condominioObjectId = new Types.ObjectId(createUserDto.condominioId)
+    if (createUserDto.role === 'propietario') {
+      if (!createUserDto.departamentoId) {
+        throw new NotFoundException(
+          'Departamento es obligatorio para propietarios',
+        )
+      }
 
-    // Crear usuario con password hasheada y condominioId
-    const hashedPassword = hashPassword(createUserDto.password)
-    const createdUser = new this.userModel({
-      ...createUserDto,
-      password: hashedPassword,
-      condominioId: condominioObjectId, // Este campo lo debes agregar en el esquema User también
-    })
+      const departamento = await this.departamentoModel.findById(
+        createUserDto.departamentoId,
+      )
+      if (!departamento) {
+        throw new NotFoundException('Departamento no encontrado')
+      }
 
-    // Guardar usuario
-    const savedUser = await createdUser.save()
+      if (departamento.propietario) {
+        throw new Error('Departamento ya tiene un propietario asignado')
+      }
 
-    // Agregar el id del usuario creado al array de usuarios del condominio
-    condominio.users.push(savedUser._id)
-    await condominio.save()
+      dataToSave.departamentoId = new Types.ObjectId(
+        createUserDto.departamentoId,
+      )
+      dataToSave.condominioId = departamento.condominio // Relacionar también al condominio
+    }
 
-    return savedUser
+    // 👇 Nueva lógica para GUARDIA
+    else if (createUserDto.role === 'guardia') {
+      if (!createUserDto.condominioId) {
+        throw new NotFoundException('Condominio es obligatorio para guardias')
+      }
+      dataToSave.condominioId = new Types.ObjectId(createUserDto.condominioId)
+      dataToSave.departamentoId = null // Asegurar que no tenga departamento
+    }
+
+    // Otros roles (residente, etc.)
+    else {
+      dataToSave.departamentoId = null
+      dataToSave.condominioId = null
+    }
+
+    const createdUser = new this.userModel(dataToSave)
+    return await createdUser.save()
   }
 
   async findAll(): Promise<User[]> {

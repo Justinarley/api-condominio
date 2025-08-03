@@ -1,4 +1,4 @@
-import * as dayjs from 'dayjs';
+import * as dayjs from 'dayjs'
 import { Response } from 'express'
 import { Model, Types } from 'mongoose'
 import { Injectable } from '@nestjs/common'
@@ -48,7 +48,13 @@ interface CondominioPoblado {
   casas?: Casa[]
   status: string
   adminId: AdminInfo
-  users: UserInfo[]
+  areasComunes?: {
+    nombre: string
+    estado: 'libre' | 'ocupado'
+    descripcion?: string
+    capacidad?: number
+  }[]
+  departamentos?: UserInfo[]
 }
 
 @Injectable()
@@ -68,7 +74,7 @@ export class ReporteCondominiosService {
     return this.condominioModel
       .find({ createdAt: { $gte: desde, $lte: hasta } })
       .populate('adminId', 'name email')
-      .populate('users', '_id')
+      .populate('departamentos')
       .exec() as unknown as Promise<CondominioPoblado[]>
   }
 
@@ -88,12 +94,13 @@ export class ReporteCondominiosService {
       address: condo.address,
       email: condo.email,
       phone: condo.phone,
-      tipo: condo.tipo,
+      tipo: condo.tipo === 'torres' ? 'Torre' : 'Casa',
       status: condo.status === 'active' ? 'Activado' : 'Inactivo',
       admin: `${condo.adminId?.name || ''} (${condo.adminId?.email || ''})`,
-      totalUsuarios: condo.users?.length || 0,
-      cantidadTorres: condo.tipo === 'torres' ? condo.torres?.length || 0 : '-',
-      cantidadCasas: condo.tipo === 'casas' ? condo.casas?.length || 0 : '-',
+      totalDepartamentos: condo.departamentos?.length || 0,
+      areasComunes: condo.areasComunes
+        ? condo.areasComunes.map((area) => area.nombre).join(', ')
+        : 'N/A',
     }))
 
     const other = {
@@ -117,12 +124,16 @@ export class ReporteCondominiosService {
     const condominio = (await this.condominioModel
       .findOne({ _id })
       .populate('adminId', 'name email')
-      .populate('users', '_id')
+      .populate({
+        path: 'departamentos',
+        populate: {
+          path: 'propietario',
+          select: 'name email', // si quieres incluir info del propietario
+        },
+      })
       .exec()) as CondominioPoblado | null
 
     if (!condominio) throw new Error('Condominio no encontrado')
-
-    const rows: any[] = []
 
     const infoBase = {
       id: condominio.id,
@@ -130,51 +141,56 @@ export class ReporteCondominiosService {
       address: condominio.address,
       email: condominio.email,
       phone: condominio.phone,
-      tipo: condominio.tipo,
+      tipo: condominio.tipo === 'torres' ? 'Torre' : 'Casa',
       status: condominio.status === 'active' ? 'Activado' : 'Inactivo',
-      admin: `${condominio.adminId?.name || ''} (${condominio.adminId?.email || ''})`,
-      totalUsuarios: condominio.users?.length || 0,
-      cantidadTorres:
-        condominio.tipo === 'torres' ? condominio.torres?.length || 0 : '-',
-      cantidadCasas:
-        condominio.tipo === 'casas' ? condominio.casas?.length || 0 : '-',
+      admin: condominio.adminId
+        ? `${condominio.adminId.name} (${condominio.adminId.email})`
+        : 'N/A',
+      totalDepartamentos: condominio.departamentos?.length || 0,
     }
 
-    if (condominio.tipo === 'torres') {
-      condominio.torres?.forEach((torre) => {
-        torre.departamentosDetalles?.forEach((dep) => {
-          rows.push({
-            ...infoBase,
-            tipoUnidad: 'Torre',
-            identificador: torre.identificador,
-            cantidad: torre.departamentos,
-            codigo: dep.codigo,
-            nombreUnidad: dep.nombre,
-          })
-        })
+    const rows = (condominio.departamentos || []).map((dep: any) => ({
+      ...infoBase,
+      identificador: dep.grupo || '-',
+      codigoDepartamento: dep.codigo,
+      nombreDepartamento: dep.nombre,
+      estadoDepartamento: dep.estado === 'disponible' ? 'Disponible' : 'Ocupado',
+      propietario:
+        dep.propietario && dep.propietario.name
+          ? `${dep.propietario.name} (${dep.propietario.email || 'sin email'})`
+          : 'No asignado',
+    }))
+
+    if (rows.length === 0) {
+      rows.push({
+        ...infoBase,
+        identificador: '-',
+        codigoDepartamento: '-',
+        nombreDepartamento: '-',
+        estadoDepartamento: '-',
+        propietario: '-',
       })
     }
 
-    if (condominio.tipo === 'casas') {
-      condominio.casas?.forEach((casa) => {
-        casa.casasDetalles?.forEach((detalle) => {
-          rows.push({
-            ...infoBase,
-            tipoUnidad: 'Casa',
-            identificador: casa.identificador,
-            cantidad: casa.cantidad,
-            codigo: detalle.codigo,
-            nombreUnidad: detalle.nombre,
-          })
-        })
-      })
-    }
+    const areasComunesTexto = condominio.areasComunes?.length
+      ? condominio.areasComunes
+          .map(
+            (area) =>
+              `${area.nombre} (Estado: ${area.estado}, Capacidad: ${area.capacidad ?? 'N/A'}, Descripción: ${
+                area.descripcion ?? 'N/A'
+              })`,
+          )
+          .join('; ')
+      : 'N/A'
 
     const data = {
       detalles: rows,
       other: {
         generationDate: dayjs().format('DD-MM-YYYY HH:mm:ss'),
         condominioNombre: condominio.name,
+        totalDepartamentos: infoBase.totalDepartamentos,
+        areasComunes: areasComunesTexto,
+        admin: infoBase.admin,
       },
     }
 

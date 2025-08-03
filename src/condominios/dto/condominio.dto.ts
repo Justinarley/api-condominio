@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer'
 import {
   IsEmail,
   IsNotEmpty,
@@ -7,11 +8,27 @@ import {
   IsOptional,
   IsIn,
   IsNumber,
-  ValidateIf,
-  IsArray,
   ValidateNested,
+  ArrayMinSize,
+  IsArray,
 } from 'class-validator'
-import { Type } from 'class-transformer'
+
+class AreaComunDto {
+  @IsString()
+  @IsNotEmpty()
+  nombre: string
+
+  @IsIn(['libre', 'ocupado'])
+  estado: 'libre' | 'ocupado'
+
+  @IsOptional()
+  @IsString()
+  descripcion?: string
+
+  @IsOptional()
+  @IsNumber()
+  capacidad?: number
+}
 
 export class TorreDto {
   @IsString()
@@ -61,17 +78,22 @@ export class CreateCondominioDto {
   @IsIn(['torres', 'casas'])
   tipo: 'torres' | 'casas'
 
-  @ValidateIf((o) => o.tipo === 'torres')
-  @IsArray()
+  @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => TorreDto)
+  @ArrayMinSize(1)
   torres?: TorreDto[]
 
-  @ValidateIf((o) => o.tipo === 'casas')
-  @IsArray()
+  @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => CasaDto)
+  @ArrayMinSize(1)
   casas?: CasaDto[]
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AreaComunDto)
+  areasComunes: AreaComunDto[]
 
   @IsMongoId()
   @IsNotEmpty()
@@ -94,6 +116,25 @@ export class UpdateCondominioInfoDto {
   @IsOptional()
   @IsString()
   phone?: string
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AreaComunDto)
+  areasComunes?: AreaComunDto[]
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => TorreDto)
+  torres?: TorreDto[]
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CasaDto)
+  casas?: CasaDto[]
+
 }
 
 export class UpdateCondominioStatusDto {

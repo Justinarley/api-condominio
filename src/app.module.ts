@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module'
 import { CondominiosModule } from './condominios/condominios.module'
 import { UsuariosModule } from './usuarios/usuarios.module'
 import { ReportesModule } from './reportes/reportes.module'
+import { DepartamentosModule } from './departamentos/departamentos.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { ReportesModule } from './reportes/reportes.module'
     CondominiosModule,
     UsuariosModule,
     ReportesModule,
+    DepartamentosModule,
   ],
   controllers: [AppController],
   providers: [AppService],

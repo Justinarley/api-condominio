@@ -12,6 +12,9 @@ import {
   UpdateCondominioStatusDto,
 } from './dto/condominio.dto'
 import { Condominio, CondominioDocument } from './condominio.schema'
+import { DepartamentosService } from '@/departamentos/departamentos.service'
+import { Departamento } from '@/departamentos/departamento.schema'
+import { CreateDepartamentoDto } from '@/departamentos/dto/departamento.dto'
 
 @Injectable()
 export class CondominiosService {
@@ -20,41 +23,20 @@ export class CondominiosService {
     private readonly condominioModel: Model<CondominioDocument>,
     @InjectModel(Admin.name)
     private readonly adminModel: Model<AdminDocument>,
+    private readonly departamentosService: DepartamentosService,
   ) {}
 
   async create(dto: CreateCondominioDto): Promise<Condominio> {
-    // Verificar si ya existe un condominio con ese ID personalizado
+    // Validar existencia condominio ID
     const exists = await this.condominioModel.findOne({ id: dto.id }).exec()
-    if (exists) {
+    if (exists)
       throw new ConflictException('Ya existe un condominio con ese ID')
-    }
 
-    // Verificar si el admin existe
+    // Validar admin
     const admin = await this.adminModel.findById(dto.adminId).exec()
-    if (!admin) {
-      throw new NotFoundException('Admin no encontrado')
-    }
+    if (!admin) throw new NotFoundException('Admin no encontrado')
 
-    // Función para generar departamentos para una torre
-    function generarDepartamentos(
-      torreIdentificador: string,
-      cantidad: number,
-    ) {
-      return Array.from({ length: cantidad }, (_, i) => {
-        const codigo = `${torreIdentificador.toUpperCase()}${String(i + 1).padStart(2, '0')}`
-        return { codigo, nombre: `Departamento ${codigo}` }
-      })
-    }
-
-    // Función para generar casas
-    function generarCasas(casaIdentificador: string, cantidad: number) {
-      return Array.from({ length: cantidad }, (_, i) => {
-        const codigo = `${casaIdentificador.toUpperCase()}${String(i + 1).padStart(2, '0')}`
-        return { codigo, nombre: `Casa ${codigo}` }
-      })
-    }
-
-    // Construimos el objeto que guardaremos
+    // Crear condominio sin departamentos todavía
     const condominioData: Partial<Condominio> = {
       id: dto.id,
       name: dto.name,
@@ -64,8 +46,13 @@ export class CondominiosService {
       tipo: dto.tipo,
       adminId: admin._id,
       status: 'active',
-      users: [],
+      areasComunes: dto.areasComunes,
     }
+
+    const createdCondominio = new this.condominioModel(condominioData)
+    const savedCondominio = await createdCondominio.save()
+
+    const departamentosIds: Types.ObjectId[] = []
 
     if (dto.tipo === 'torres') {
       if (!dto.torres || dto.torres.length === 0) {
@@ -73,39 +60,64 @@ export class CondominiosService {
           'Debe especificar al menos una torre con departamentos',
         )
       }
-      condominioData.torres = dto.torres.map((torre) => ({
-        identificador: torre.identificador.toUpperCase(),
-        departamentos: torre.departamentos,
-        departamentosDetalles: generarDepartamentos(
-          torre.identificador,
-          torre.departamentos,
-        ),
-      }))
+
+      for (const torre of dto.torres) {
+        for (let i = 1; i <= torre.departamentos; i++) {
+          const codigo = `${torre.identificador.toUpperCase()}${String(i).padStart(2, '0')}`
+          const nombre = `Departamento ${codigo}`
+
+          const departamentoDto: CreateDepartamentoDto = {
+            codigo,
+            nombre,
+            estado: 'disponible',
+            condominio: savedCondominio._id,
+            grupo: torre.identificador.toUpperCase(),
+            propietario: undefined,
+          }
+
+          const departamento =
+            await this.departamentosService.create(departamentoDto)
+          departamentosIds.push(departamento._id)
+        }
+      }
     } else if (dto.tipo === 'casas') {
       if (!dto.casas || dto.casas.length === 0) {
         throw new ConflictException(
           'Debe especificar al menos un identificador de casas con cantidad',
         )
       }
-      condominioData.casas = dto.casas.map((casa) => ({
-        identificador: casa.identificador.toUpperCase(),
-        cantidad: casa.cantidad,
-        casasDetalles: generarCasas(casa.identificador, casa.cantidad),
-      }))
+
+      for (const casa of dto.casas) {
+        for (let i = 1; i <= casa.cantidad; i++) {
+          const codigo = `${casa.identificador.toUpperCase()}${String(i).padStart(2, '0')}`
+          const nombre = `Casa ${codigo}`
+
+          const departamentoDto: CreateDepartamentoDto = {
+            codigo,
+            nombre,
+            estado: 'disponible',
+            condominio: savedCondominio._id,
+            grupo: casa.identificador.toUpperCase(),
+            propietario: undefined,
+          }
+
+          const departamento =
+            await this.departamentosService.create(departamentoDto)
+          departamentosIds.push(departamento._id)
+        }
+      }
     }
 
-    // Crear y guardar el condominio
-    const created = new this.condominioModel(condominioData)
-    const saved = await created.save()
+    // Guardar departamentos vinculados al condominio
+    savedCondominio.departamentos = departamentosIds
+    await savedCondominio.save()
 
+    // Actualizar admin con el condominio
     await this.adminModel.findByIdAndUpdate(admin._id, {
-      $push: { condominios: saved._id },
+      $push: { condominios: savedCondominio._id },
     })
-    console.log(
-      'Condominio a guardar:',
-      JSON.stringify(condominioData, null, 2),
-    )
-    return saved
+
+    return savedCondominio
   }
 
   async findAll(): Promise<CondominioDocument[]> {
@@ -139,10 +151,71 @@ export class CondominiosService {
     dto: UpdateCondominioInfoDto,
   ): Promise<CondominioDocument> {
     const condominio = await this.findOneById(id)
+
     if (dto.name) condominio.name = dto.name
     if (dto.address) condominio.address = dto.address
     if (dto.email) condominio.email = dto.email
     if (dto.phone) condominio.phone = dto.phone
+
+    if (dto.areasComunes) {
+      condominio.areasComunes = dto.areasComunes.map((area) => ({
+        nombre: area.nombre,
+        estado: area.estado ?? 'libre',
+        descripcion: area.descripcion,
+        capacidad: area.capacidad,
+      }))
+    }
+
+    const nuevosDepartamentos: Types.ObjectId[] = []
+
+    if (dto.torres && dto.torres.length > 0) {
+      for (const torre of dto.torres) {
+        for (let i = 1; i <= torre.departamentos; i++) {
+          const codigo = `${torre.identificador.toUpperCase()}${String(i).padStart(2, '0')}`
+          const nombre = `Departamento ${codigo}`
+
+          const departamentoDto: CreateDepartamentoDto = {
+            codigo,
+            nombre,
+            estado: 'disponible',
+            condominio: condominio._id,
+            grupo: torre.identificador.toUpperCase(),
+            propietario: undefined,
+          }
+
+          const departamento =
+            await this.departamentosService.create(departamentoDto)
+          nuevosDepartamentos.push(departamento._id)
+        }
+      }
+    }
+
+    if (dto.casas && dto.casas.length > 0) {
+      for (const casa of dto.casas) {
+        for (let i = 1; i <= casa.cantidad; i++) {
+          const codigo = `${casa.identificador.toUpperCase()}${String(i).padStart(2, '0')}`
+          const nombre = `Casa ${codigo}`
+
+          const departamentoDto: CreateDepartamentoDto = {
+            codigo,
+            nombre,
+            estado: 'disponible',
+            condominio: condominio._id,
+            grupo: casa.identificador.toUpperCase(),
+            propietario: undefined,
+          }
+
+          const departamento =
+            await this.departamentosService.create(departamentoDto)
+          nuevosDepartamentos.push(departamento._id)
+        }
+      }
+    }
+
+    if (nuevosDepartamentos.length > 0) {
+      condominio.departamentos.push(...nuevosDepartamentos)
+    }
+
     return condominio.save()
   }
 }

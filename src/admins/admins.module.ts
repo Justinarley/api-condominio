@@ -4,14 +4,22 @@ import { AdminsService } from './admins.service'
 import { MongooseModule } from '@nestjs/mongoose'
 import { Admin, AdminSchema } from './admin.schemas'
 import { AdminsController } from './admins.controller'
+import { AdminController } from './admin.controller'
+import { AdminService } from './admin.service'
+import { CondominiosModule } from '@/condominios/condominios.module'
+import { DepartamentosModule } from '@/departamentos/departamentos.module'
+import { UsuariosModule } from '@/usuarios/usuarios.module'
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Admin.name, schema: AdminSchema }]),
     JwtModule,
+    CondominiosModule,
+    DepartamentosModule,
+    UsuariosModule
   ],
-  providers: [AdminsService],
-  controllers: [AdminsController],
+  providers: [AdminsService, AdminService],
+  controllers: [AdminsController, AdminController],
   exports: [AdminsService],
 })
 export class AdminsModule {}

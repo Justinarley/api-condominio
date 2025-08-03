@@ -10,6 +10,7 @@ import {
   Matches,
   IsMobilePhone,
   IsMongoId,
+  ValidateIf,
 } from 'class-validator'
 
 export enum IdentificationType {
@@ -20,7 +21,7 @@ export enum IdentificationType {
 
 export enum UserRole {
   PROPIETARIO = 'propietario',
-  RESIDENTE = 'residente',
+  GUARDIA = 'guardia',
 }
 
 export enum UserStatus {
@@ -67,10 +68,6 @@ export class CreateResidentUserDto {
 
   @IsString()
   @IsNotEmpty()
-  parkingSpot: string
-
-  @IsString()
-  @IsNotEmpty()
   emergencyContactName: string
 
   @IsString()
@@ -90,8 +87,23 @@ export class CreateResidentUserDto {
   @MaxLength(250)
   notes?: string
 
+  // Vehículo - opcional
+  @IsOptional()
+  @IsString()
+  vehiclePlate?: string
+
+  @IsOptional()
+  @IsString()
+  vehicleModel?: string
+
+  // Validación condicional: departamentoId requerido solo si rol es propietario
+  @ValidateIf((o) => o.role === UserRole.PROPIETARIO)
+  @IsMongoId({ message: 'El ID del departamento debe ser un ObjectId válido' })
+  departamentoId?: string
+
+  @ValidateIf((o) => o.role === UserRole.GUARDIA)
   @IsMongoId({ message: 'El ID del condominio debe ser un ObjectId válido' })
-  condominioId: string
+  condominioId?: string
 }
 
 export class UpdateInfoDto {
@@ -131,20 +143,11 @@ export class UpdateInfoDto {
 
   @IsOptional()
   @IsString()
-  parkingSpot?: string
-
-  @IsOptional()
-  @IsString()
   emergencyContactName?: string
 
   @IsOptional()
   @IsString()
   emergencyContactPhone?: string
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(250)
-  notes?: string
 }
 
 export class UpdatePasswordDto {
