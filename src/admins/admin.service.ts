@@ -43,6 +43,7 @@ export class AdminService {
 
     const condominios = await this.condominioModel
       .find({ _id: { $in: admin.condominios } })
+      .sort({ createdAt: -1 })
       .lean()
 
     const condominiosConInfo = await Promise.all(
@@ -77,12 +78,6 @@ export class AdminService {
     return condominiosConInfo
   }
 
-  async obtenerUsuariosPendientes(): Promise<UserDocument[]> {
-    return this.userModel
-      .find({ status: 'inactive' })
-      .populate('departamentoId', 'codigo nombre estado') // si quieres info del departamento asignado
-      .exec()
-  }
   async aprobarUsuario(
     adminId: string,
     userId: string,
@@ -115,5 +110,62 @@ export class AdminService {
     }
 
     return user
+  }
+
+  async obtenerUsuariosPorRolYEstado(
+    adminId: string,
+    role?: string,
+    status?: string,
+  ): Promise<any[]> {
+    const admin = await this.getAdminWithCondominios(adminId)
+    const condominioIds = admin.condominios
+
+    const query: any = {
+      condominioId: { $in: condominioIds },
+    }
+    if (role) query.role = role
+    if (status) query.status = status
+
+    const usuarios = await this.userModel
+      .find(query)
+      .populate('departamentoId', 'codigo')
+      .populate('condominioId', 'name')
+      .lean()
+
+    return usuarios.map((user) => {
+      const departamento = user.departamentoId as any
+      const condominio = user.condominioId as any
+
+      return {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        identificationNumber: user.identificationNumber,
+        role: user.role,
+        status: user.status,
+        departamentoCodigo: departamento?.codigo || 'N/A',
+        condominioNombre: condominio?.name || 'N/A',
+      }
+    })
+  }
+
+  async contarGuardiasPorEstado(adminId: string) {
+    const admin = await this.getAdminWithCondominios(adminId)
+    const condominioIds = admin.condominios
+
+    const activos = await this.userModel.countDocuments({
+      condominioId: { $in: condominioIds },
+      role: 'guardia',
+      status: 'active',
+    })
+
+    const inactivos = await this.userModel.countDocuments({
+      condominioId: { $in: condominioIds },
+      role: 'guardia',
+      status: 'inactive',
+    })
+
+    return { activos, inactivos }
   }
 }

@@ -27,8 +27,30 @@ export class AdminController {
   }
 
   @Get('usuarios-pendientes')
-  async usuariosPendientes() {
-    return this.adminService.obtenerUsuariosPendientes()
+  async usuariosPendientes(@Req() req) {
+    return this.adminService.obtenerUsuariosPorRolYEstado(
+      req.user.id,
+      undefined,
+      'inactive',
+    )
+  }
+
+  @Get('propietarios-activos')
+  async obtenerPropietariosActivos(@Req() req) {
+    return this.adminService.obtenerUsuariosPorRolYEstado(
+      req.user.id,
+      'propietario',
+      'active',
+    )
+  }
+
+  @Get('guardias-activos')
+  async obtenerGuardiasActivos(@Req() req) {
+    return this.adminService.obtenerUsuariosPorRolYEstado(
+      req.user.id,
+      'guardia',
+      'active',
+    )
   }
 
   @Put('usuarios/:id/aprobar')
@@ -42,5 +64,10 @@ export class AdminController {
       userId,
       body.aprobar,
     )
+  }
+
+  @Get('guardias-count')
+  async contarGuardias(@Req() req) {
+    return this.adminService.contarGuardiasPorEstado(req.user.id)
   }
 }

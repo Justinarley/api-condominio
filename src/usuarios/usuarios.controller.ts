@@ -14,6 +14,9 @@ import {
   UpdatePasswordDto,
 } from './dto/usuarios.dto'
 import { UpdateStatusDto } from '@/admins/dto/admins.dto'
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard'
+import { RolesGuard } from '@/auth/guards/roles.guard'
+import { Roles } from '@/auth/decoradors/roles.decorator'
 
 @Controller('usuarios')
 export class UsuariosController {
@@ -39,6 +42,8 @@ export class UsuariosController {
     return this.usuariosService.updateInfo(id, dto)
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   @Put(':id/password')
   async updatePassword(
     @Param('id') id: string,
@@ -47,6 +52,8 @@ export class UsuariosController {
     return this.usuariosService.updatePassword(id, dto)
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   @Put(':id/status')
   async updateStatus(@Param('id') id: string, @Body() dto: UpdateStatusDto) {
     return this.usuariosService.updateStatus(id, dto)

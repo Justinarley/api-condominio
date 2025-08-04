@@ -124,6 +124,7 @@ export class CondominiosService {
     return this.condominioModel
       .find()
       .populate('adminId', 'name email phone identification')
+      .sort({ createdAt: -1 })
       .exec()
   }
 
