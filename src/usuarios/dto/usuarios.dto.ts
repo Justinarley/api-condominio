@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer'
 import {
   IsEmail,
   IsNotEmpty,
@@ -11,6 +12,8 @@ import {
   IsMobilePhone,
   IsMongoId,
   ValidateIf,
+  ValidateNested,
+  ArrayMinSize,
 } from 'class-validator'
 
 export enum IdentificationType {
@@ -27,6 +30,17 @@ export enum UserRole {
 export enum UserStatus {
   ACTIVE = 'active',
   INACTIVE = 'inactive',
+}
+
+export class VehicleDto {
+  @IsString()
+  plate: string
+
+  @IsString()
+  model: string
+
+  @IsString()
+  color: string
 }
 
 export class CreateResidentUserDto {
@@ -55,13 +69,10 @@ export class CreateResidentUserDto {
   @Matches(/^\d{8,13}$/, { message: 'Tipo de identificación inválido' })
   identificationNumber: string
 
-  @IsString()
-  @IsNotEmpty()
-  unitNumber: string
-
   @IsEnum(UserRole)
   role: UserRole
 
+  @IsOptional()
   @IsNumber()
   @Min(1)
   numberOfResidents: number
@@ -87,14 +98,11 @@ export class CreateResidentUserDto {
   @MaxLength(250)
   notes?: string
 
-  // Vehículo - opcional
   @IsOptional()
-  @IsString()
-  vehiclePlate?: string
-
-  @IsOptional()
-  @IsString()
-  vehicleModel?: string
+  @ValidateNested({ each: true })
+  @Type(() => VehicleDto)
+  @ArrayMinSize(0)
+  vehicles?: VehicleDto[]
 
   // Validación condicional: departamentoId requerido solo si rol es propietario
   @ValidateIf((o) => o.role === UserRole.PROPIETARIO)
@@ -129,10 +137,6 @@ export class UpdateInfoDto {
   identificationNumber?: string
 
   @IsOptional()
-  @IsString()
-  unitNumber?: string
-
-  @IsOptional()
   @IsEnum(UserRole)
   role?: UserRole
 
@@ -148,6 +152,12 @@ export class UpdateInfoDto {
   @IsOptional()
   @IsString()
   emergencyContactPhone?: string
+
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => VehicleDto)
+  @ArrayMinSize(0)
+  vehicles?: VehicleDto[]
 }
 
 export class UpdatePasswordDto {

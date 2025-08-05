@@ -5,11 +5,13 @@ import { AdminDocument } from '../admins/admin.schemas'
 import { AdminsService } from '../admins/admins.service'
 import { SuperAdminDocument } from '../super-admin/super-admin.schema'
 import { SuperAdminService } from '../super-admin/super-admin.service'
+import { UsuariosService } from '@/usuarios/usuarios.service'
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly superAdminService: SuperAdminService,
+    private readonly usuariosService: UsuariosService,
     private readonly adminsService: AdminsService,
     private readonly jwtService: JwtService,
   ) {}
@@ -40,6 +42,17 @@ export class AuthService {
         name: admin.name,
       }
     }
+
+    const usuario = await this.usuariosService.validateUser(email, password)
+    if (usuario && usuario.status === 'active') {
+      return {
+        id: usuario._id.toString(),
+        email: usuario.email,
+        role: usuario.role,
+        name: usuario.name,
+      }
+    }
+
     return null
   }
 

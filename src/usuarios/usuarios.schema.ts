@@ -23,13 +23,10 @@ export class User {
   @Prop({ required: true, unique: true })
   identificationNumber: string
 
-  @Prop({ required: true })
-  unitNumber: string
-
   @Prop({ required: true, enum: ['propietario', 'guardia'] })
   role: string
 
-  @Prop({ required: true, min: 1 })
+  @Prop({ min: 1 })
   numberOfResidents: number
 
   @Prop({ required: true })
@@ -42,17 +39,30 @@ export class User {
   status: string
 
   // Vehículo
-  @Prop({ type: String, default: null })
-  vehiclePlate?: string
-
-  @Prop({ type: String, default: null })
-  vehicleModel?: string
+  @Prop({
+    type: [
+      {
+        plate: { type: String },
+        model: { type: String },
+        color: { type: String },
+      },
+    ],
+    default: [],
+  })
+  vehicles?: {
+    plate: string
+    model: string
+    color: string
+  }[]
 
   @Prop({ type: Types.ObjectId, ref: 'Departamento', default: null })
   departamentoId?: Types.ObjectId
 
   @Prop({ type: Types.ObjectId, ref: 'Condominio', default: null })
   condominioId?: Types.ObjectId
+
+  @Prop({ type: [Types.ObjectId], ref: 'Pago', default: [] })
+  pagos?: Types.ObjectId[]
 }
 
 export const UserSchema = SchemaFactory.createForClass(User)

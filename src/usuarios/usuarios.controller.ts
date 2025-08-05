@@ -6,6 +6,7 @@ import {
   Param,
   Body,
   UseGuards,
+  Req,
 } from '@nestjs/common'
 import { UsuariosService } from './usuarios.service'
 import {
@@ -13,7 +14,7 @@ import {
   UpdateInfoDto,
   UpdatePasswordDto,
 } from './dto/usuarios.dto'
-import { UpdateStatusDto } from '@/admins/dto/admins.dto'
+import { CrearSolicitudDto, UpdateStatusDto } from '@/admins/dto/admins.dto'
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard'
 import { RolesGuard } from '@/auth/guards/roles.guard'
 import { Roles } from '@/auth/decoradors/roles.decorator'
@@ -30,6 +31,27 @@ export class UsuariosController {
   @Get()
   async findAll() {
     return this.usuariosService.findAll()
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('propietario')
+  @Get('dashboard-propietario')
+  async getDashboard(@Req() req) {
+    return this.usuariosService.getDashboardData(req.user.id)
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('propietario')
+  @Get('areas-comunes')
+  async obtenerAreasComunes(@Req() req) {
+    return this.usuariosService.obtenerAreasComunes(req.user.id)
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('propietario')
+  @Post('reservar-area')
+  async reservarArea(@Req() req, @Body() dto: CrearSolicitudDto) {
+    return this.usuariosService.solicitarReserva(dto, req.user.id)
   }
 
   @Get(':id')

@@ -9,6 +9,7 @@ import { AdminsModule } from '../admins/admins.module'
 import { JwtStrategy } from './guards/jwt.strategy'
 import { JwtAuthGuard } from './guards/jwt-auth.guard'
 import { ConfigModule, ConfigService } from '@nestjs/config'
+import { UsuariosModule } from '@/usuarios/usuarios.module'
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config'
     }),
     SuperAdminModule,
     AdminsModule,
+    UsuariosModule,
   ],
   providers: [AuthService, JwtStrategy, JwtAuthGuard],
   controllers: [AuthController],

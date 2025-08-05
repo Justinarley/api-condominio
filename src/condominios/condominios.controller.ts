@@ -7,6 +7,7 @@ import {
   Body,
   UseGuards,
   Req,
+  Query,
 } from '@nestjs/common'
 import { CondominiosService } from './condominios.service'
 import { RolesGuard } from '@/auth/guards/roles.guard'
@@ -30,8 +31,8 @@ export class CondominiosController {
   }
 
   @Get()
-  async findAll() {
-    return this.condominiosService.findAll()
+  async findAll(@Query('condominioId') condominioId?: string) {
+    return this.condominiosService.findAll(condominioId)
   }
 
   @Get(':id')

@@ -7,12 +7,14 @@ import {
   Departamento,
   DepartamentoSchema,
 } from '@/departamentos/departamento.schema'
+import { Condominio, CondominioSchema } from '@/condominios/condominio.schema'
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
       { name: Departamento.name, schema: DepartamentoSchema },
+       { name: Condominio.name, schema: CondominioSchema },
     ]),
   ],
   providers: [UsuariosService],

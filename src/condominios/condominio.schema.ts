@@ -1,6 +1,27 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
 import { Document, Types } from 'mongoose'
 
+@Schema({ _id: true })
+export class SolicitudReserva {
+  @Prop({ type: Types.ObjectId })
+  _id: Types.ObjectId
+
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  usuario: Types.ObjectId
+
+  @Prop({ required: true })
+  fechaInicio: Date
+
+  @Prop({ required: true })
+  fechaFin: Date
+
+  @Prop({ enum: ['pendiente', 'aprobada', 'rechazada'], default: 'pendiente' })
+  estado: 'pendiente' | 'aprobada' | 'rechazada'
+
+  @Prop()
+  motivoRechazo?: string
+}
+const SolicitudReservaSchema = SchemaFactory.createForClass(SolicitudReserva)
 
 @Schema()
 export class AreaComun {
@@ -15,6 +36,9 @@ export class AreaComun {
 
   @Prop()
   capacidad?: number
+
+  @Prop({ type: [SolicitudReservaSchema], default: [] })
+  solicitudes?: SolicitudReserva[]
 }
 export const AreaComunSchema = SchemaFactory.createForClass(AreaComun)
 
@@ -48,7 +72,6 @@ export class Condominio {
 
   @Prop({ type: [Types.ObjectId], ref: 'Departamento', default: [] })
   departamentos: Types.ObjectId[]
-
 
   @Prop({ type: Types.ObjectId, ref: 'Admin', required: true })
   adminId: Types.ObjectId

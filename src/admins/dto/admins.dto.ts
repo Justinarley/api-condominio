@@ -5,6 +5,8 @@ import {
   IsString,
   IsOptional,
   IsIn,
+  IsMongoId,
+  IsDateString,
 } from 'class-validator'
 
 export class CreateAdminDto {
@@ -62,4 +64,19 @@ export class UpdateInfoDto {
   @IsOptional()
   @IsString()
   address?: string
+}
+
+export class CrearSolicitudDto {
+  @IsMongoId()
+  @IsNotEmpty()
+  condominioId: string
+
+  @IsNotEmpty()
+  nombreArea: string
+
+  @IsDateString()
+  fechaInicio: Date
+
+  @IsDateString()
+  fechaFin: Date
 }

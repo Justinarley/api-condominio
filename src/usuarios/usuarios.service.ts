@@ -1,7 +1,7 @@
 import { Model, Types } from 'mongoose'
 import { InjectModel } from '@nestjs/mongoose'
 import { User, UserDocument } from './usuarios.schema'
-import { UpdateStatusDto } from '@/admins/dto/admins.dto'
+import { CrearSolicitudDto, UpdateStatusDto } from '@/admins/dto/admins.dto'
 import { Injectable, NotFoundException } from '@nestjs/common'
 import { hashPassword, verifyPassword } from '@/utils/password'
 import {
@@ -13,11 +13,14 @@ import {
   Departamento,
   DepartamentoDocument,
 } from '@/departamentos/departamento.schema'
+import { Condominio, CondominioDocument } from '@/condominios/condominio.schema'
 
 @Injectable()
 export class UsuariosService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(Condominio.name)
+    private condominioModel: Model<CondominioDocument>,
     @InjectModel(Departamento.name)
     private departamentoModel: Model<DepartamentoDocument>,
   ) {}
@@ -116,5 +119,187 @@ export class UsuariosService {
     const isValid = verifyPassword(password, user.password)
     if (!isValid) return null
     return user
+  }
+
+  async obtenerAreasComunes(userId: string) {
+    // 1. Buscar usuario
+    const user = await this.userModel.findById(userId)
+    if (!user) throw new NotFoundException('Usuario no encontrado')
+
+    if (!user.departamentoId)
+      throw new NotFoundException('Usuario no tiene departamento asignado')
+
+    // 2. Buscar departamento
+    const departamento = await this.departamentoModel.findById(
+      user.departamentoId,
+    )
+    if (!departamento) throw new NotFoundException('Departamento no encontrado')
+
+    if (!departamento.condominio)
+      throw new NotFoundException('Departamento no tiene condominio asignado')
+
+    // 3. Buscar condominio
+    const condominio = await this.condominioModel.findById(
+      departamento.condominio,
+    )
+    if (!condominio) throw new NotFoundException('Condominio no encontrado')
+
+    // 4. Retornar áreas comunes
+    return condominio.areasComunes.map((area) => ({
+      nombre: area.nombre,
+      estado: area.estado,
+      descripcion: area.descripcion,
+      capacidad: area.capacidad,
+    }))
+  }
+
+  async solicitarReserva(dto: CrearSolicitudDto, userId: string) {
+    // 1. Buscar usuario para obtener departamentoId
+    const user = await this.userModel.findById(userId)
+    if (!user) throw new NotFoundException('Usuario no encontrado')
+    if (!user.departamentoId)
+      throw new NotFoundException('Usuario no tiene departamento asignado')
+
+    // 2. Buscar departamento
+    const departamento = await this.departamentoModel.findById(
+      user.departamentoId,
+    )
+    if (!departamento) throw new NotFoundException('Departamento no encontrado')
+    if (!departamento.condominio)
+      throw new NotFoundException('Departamento no tiene condominio asignado')
+
+    // 3. Buscar condominio
+    const condominio = await this.condominioModel.findById(
+      departamento.condominio,
+    )
+    if (!condominio) throw new NotFoundException('Condominio no encontrado')
+
+    // 4. Buscar área comunal
+    const area = condominio.areasComunes.find(
+      (a) => a.nombre === dto.nombreArea,
+    )
+    if (!area) throw new NotFoundException('Área comunal no encontrada')
+
+    // 5. Validar conflictos en reservas
+    const solicitudes = area.solicitudes || []
+    const conflicto = solicitudes.find(
+      (s) =>
+        s.estado === 'aprobada' &&
+        ((dto.fechaInicio >= s.fechaInicio && dto.fechaInicio <= s.fechaFin) ||
+          (dto.fechaFin >= s.fechaInicio && dto.fechaFin <= s.fechaFin)),
+    )
+    if (conflicto) throw new Error('El área ya está reservada en ese horario')
+
+    // 6. Agregar solicitud nueva
+    solicitudes.push({
+      _id: new Types.ObjectId(),
+      usuario: new Types.ObjectId(userId),
+      fechaInicio: new Date(dto.fechaInicio),
+      fechaFin: new Date(dto.fechaFin),
+      estado: 'pendiente',
+    })
+
+    // 7. Guardar cambios
+    await condominio.save()
+
+    return { message: 'Solicitud enviada con éxito' }
+  }
+
+  async getDashboardData(userId: string) {
+    const pipeline = [
+      // 1. Buscar al usuario propietario
+      { $match: { _id: new Types.ObjectId(userId), role: 'propietario' } },
+
+      // 2. Traer el departamento
+      {
+        $lookup: {
+          from: 'departamentos',
+          localField: 'departamentoId',
+          foreignField: '_id',
+          as: 'departamento',
+        },
+      },
+      { $unwind: '$departamento' },
+
+      // 3. Traer el condominio desde el departamento
+      {
+        $lookup: {
+          from: 'condominios',
+          localField: 'departamento.condominio',
+          foreignField: '_id',
+          as: 'condominio',
+        },
+      },
+      { $unwind: '$condominio' },
+
+      // 4. Traer el administrador desde la colección "admins"
+      {
+        $lookup: {
+          from: 'admins',
+          localField: 'condominio.adminId',
+          foreignField: '_id',
+          as: 'admin',
+        },
+      },
+      { $unwind: '$admin' },
+
+      // 5. Contar las solicitudes del usuario en las áreas comunes
+      {
+        $addFields: {
+          solicitudesCount: {
+            $sum: {
+              $map: {
+                input: '$condominio.areasComunes',
+                as: 'area',
+                in: {
+                  $size: {
+                    $filter: {
+                      input: '$$area.solicitudes',
+                      as: 'sol',
+                      cond: { $eq: ['$$sol.usuario', '$_id'] },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+
+      // 6. Proyección final
+      {
+        $project: {
+          _id: 0,
+          usuario: {
+            name: '$name',
+            email: '$email',
+            phone: '$phone',
+            vehicles: { $ifNull: ['$vehicles', []] },
+          },
+          departamento: {
+            codigo: '$departamento.codigo',
+            nombre: '$departamento.nombre',
+            estado: '$departamento.estado',
+            grupo: '$departamento.grupo',
+          },
+          condominio: {
+            id: '$condominio.id',
+            name: '$condominio.name',
+            address: '$condominio.address',
+            tipo: '$condominio.tipo',
+          },
+          solicitudes: '$solicitudesCount',
+          administrador: {
+            name: '$admin.name',
+            email: '$admin.email',
+            phone: '$admin.phone',
+          },
+        },
+      },
+    ]
+
+    const result = await this.userModel.aggregate(pipeline).exec()
+    if (result.length === 0) throw new NotFoundException('Datos no encontrados')
+    return result[0]
   }
 }

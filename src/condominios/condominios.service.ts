@@ -120,9 +120,14 @@ export class CondominiosService {
     return savedCondominio
   }
 
-  async findAll(): Promise<CondominioDocument[]> {
+  async findAll(condominioId?: string): Promise<CondominioDocument[]> {
+    const filter: any = {}
+    if (condominioId) {
+      filter._id = condominioId
+    }
+
     return this.condominioModel
-      .find()
+      .find(filter)
       .populate('adminId', 'name email phone identification')
       .sort({ createdAt: -1 })
       .exec()
