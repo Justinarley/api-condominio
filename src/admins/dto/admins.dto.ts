@@ -7,6 +7,10 @@ import {
   IsIn,
   IsMongoId,
   IsDateString,
+  IsArray,
+  IsNumber,
+  Min,
+  Max,
 } from 'class-validator'
 
 export class CreateAdminDto {
@@ -79,4 +83,29 @@ export class CrearSolicitudDto {
 
   @IsDateString()
   fechaFin: Date
+}
+
+export class AsignarAlicuotaGrupoDto {
+  @IsArray()
+  @IsMongoId({ each: true })
+  departamentos: string[]
+
+  @IsNumber()
+  @Min(0)
+  @Max(1)
+  alicuota: number
+}
+
+export class CrearGastoMensualDto {
+  @IsNotEmpty()
+  @IsString()
+  mes: string
+
+  @IsNotEmpty()
+  @IsNumber()
+  montoTotal: number
+
+  @IsOptional()
+  @IsString()
+  descripcion?: string
 }

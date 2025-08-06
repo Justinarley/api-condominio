@@ -42,6 +42,23 @@ export class AreaComun {
 }
 export const AreaComunSchema = SchemaFactory.createForClass(AreaComun)
 
+@Schema()
+export class GastoMensual {
+  @Prop({ required: true })
+  mes: string
+
+  @Prop({ required: true })
+  montoTotal: number
+
+  @Prop()
+  descripcion?: string
+
+  @Prop({ type: Date, default: Date.now })
+  creadoEn: Date
+}
+
+const GastoMensualSchema = SchemaFactory.createForClass(GastoMensual)
+
 export type CondominioDocument = Condominio & Document
 
 @Schema({ timestamps: true })
@@ -75,6 +92,9 @@ export class Condominio {
 
   @Prop({ type: Types.ObjectId, ref: 'Admin', required: true })
   adminId: Types.ObjectId
+
+  @Prop({ type: [GastoMensualSchema], default: [] })
+  gastosMensuales: GastoMensual[]
 }
 
 export const CondominioSchema = SchemaFactory.createForClass(Condominio)

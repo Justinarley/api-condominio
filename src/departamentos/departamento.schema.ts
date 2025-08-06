@@ -12,7 +12,11 @@ export class Departamento {
   @Prop({ required: true })
   nombre: string // "Departamento A01"
 
-  @Prop({ type: String, enum: ['ocupado', 'disponible', 'mantenimiento'], default: 'disponible' })
+  @Prop({
+    type: String,
+    enum: ['ocupado', 'disponible', 'mantenimiento'],
+    default: 'disponible',
+  })
   estado: 'ocupado' | 'disponible' | 'mantenimiento'
 
   @Prop({ type: Types.ObjectId, ref: 'User', default: null })
@@ -21,10 +25,11 @@ export class Departamento {
   @Prop({ type: Types.ObjectId, ref: 'Condominio', required: true })
   condominio: Types.ObjectId
 
-  @Prop({ type: String, required: true }) // torreA o casaC
+  @Prop({ type: String, required: true })
   grupo: string
 
-
+  @Prop({ required: true, min: 0, max: 1 })
+  alicuota?: number
 }
 
 export const DepartamentoSchema = SchemaFactory.createForClass(Departamento)

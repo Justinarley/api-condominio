@@ -14,6 +14,10 @@ import {
   DepartamentoDocument,
 } from '@/departamentos/departamento.schema'
 import { Condominio, CondominioDocument } from '@/condominios/condominio.schema'
+import * as dayjs from 'dayjs';
+import 'dayjs/locale/es'
+
+dayjs.locale('es')
 
 @Injectable()
 export class UsuariosService {
@@ -281,12 +285,25 @@ export class UsuariosService {
             nombre: '$departamento.nombre',
             estado: '$departamento.estado',
             grupo: '$departamento.grupo',
+            alicuota: '$departamento.alicuota',
           },
           condominio: {
             id: '$condominio.id',
             name: '$condominio.name',
             address: '$condominio.address',
             tipo: '$condominio.tipo',
+            gastosMensuales: {
+              $filter: {
+                input: '$condominio.gastosMensuales',
+                as: 'gasto',
+                cond: {
+                  $eq: [
+                    '$$gasto.mes',
+                    dayjs().format('MMMM YYYY'),
+                  ],
+                },
+              },
+            },
           },
           solicitudes: '$solicitudesCount',
           administrador: {

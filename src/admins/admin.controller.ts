@@ -13,7 +13,11 @@ import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard'
 import { RolesGuard } from '@/auth/guards/roles.guard'
 import { Roles } from '@/auth/decoradors/roles.decorator'
 import { AdminService } from './admin.service'
-import { UpdateInfoDto } from './dto/admins.dto'
+import {
+  AsignarAlicuotaGrupoDto,
+  CrearGastoMensualDto,
+  UpdateInfoDto,
+} from './dto/admins.dto'
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin')
@@ -102,6 +106,15 @@ export class AdminController {
     )
   }
 
+  @Put('gastos/:condominioId')
+  async crearGastoMensual(
+    @Req() req,
+    @Param('condominioId') condominioId: string,
+    @Body() dto: CrearGastoMensualDto,
+  ) {
+    return this.adminService.crearGastoMensual(req.user.id, condominioId, dto)
+  }
+
   @Put('solicitudes-reserva/:condominioId/:solicitudId')
   async actualizarEstadoSolicitud(
     @Param('condominioId') condominioId: string,
@@ -113,6 +126,42 @@ export class AdminController {
       solicitudId,
       dto.aprobar,
       dto.motivoRechazo,
+    )
+  }
+
+  @Get('gasto-mensual-actual/:condominioId')
+  async obtenerGastoMensualActual(
+    @Req() req,
+    @Param('condominioId') condominioId: string,
+  ) {
+    return this.adminService.obtenerGastoMensualActual(
+      req.user.id,
+      condominioId,
+    )
+  }
+
+  @Get('departamentos-por-grupo/:condominioId')
+  async obtenerDepartamentosPorGrupo(
+    @Req() req,
+    @Param('condominioId') condominioId: string,
+  ) {
+    return this.adminService.obtenerDepartamentosPorGrupo(
+      req.user.id,
+      condominioId,
+    )
+  }
+
+  @Put('asignar-alicuotas/:condominioId')
+  async asignarAlicuotas(
+    @Req() req,
+    @Param('condominioId') condominioId: string,
+    @Body() dto: AsignarAlicuotaGrupoDto,
+  ) {
+    return this.adminService.asignarAlicuotaGrupo(
+      req.user.id,
+      condominioId,
+      dto.departamentos,
+      dto.alicuota,
     )
   }
 

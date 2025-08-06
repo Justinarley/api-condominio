@@ -16,7 +16,11 @@ import {
   DepartamentoDocument,
 } from '../departamentos/departamento.schema'
 import { User, UserDocument } from '@/usuarios/usuarios.schema'
-import { UpdateInfoDto } from './dto/admins.dto'
+import { CrearGastoMensualDto, UpdateInfoDto } from './dto/admins.dto'
+import * as dayjs from 'dayjs';
+import 'dayjs/locale/es'
+
+dayjs.locale('es')
 
 @Injectable()
 export class AdminService {
@@ -306,5 +310,184 @@ export class AdminService {
 
     await condominio.save()
     return { message: `Solicitud ${aprobar ? 'aprobada' : 'rechazada'}` }
+  }
+
+  async obtenerDepartamentosPorGrupo(adminId: string, condominioId: string) {
+    const admin = await this.getAdminWithCondominios(adminId)
+    const condominioObjectId = new Types.ObjectId(condominioId)
+
+    const condominioPermitido = admin.condominios.some((id) =>
+      id.equals(condominioObjectId),
+    )
+    if (!condominioPermitido) {
+      throw new ForbiddenException('No tienes acceso a este condominio')
+    }
+
+    // Obtener todos los departamentos de ese condominio
+    const departamentos = await this.departamentoModel
+      .find({ condominio: condominioObjectId })
+      .lean()
+
+    // Agrupar por grupo
+    const grupos = departamentos.reduce(
+      (acc, depto) => {
+        const grupo = depto.grupo || 'Sin grupo'
+        if (!acc[grupo]) acc[grupo] = []
+        acc[grupo].push(depto)
+        return acc
+      },
+      {} as Record<string, DepartamentoDocument[]>,
+    )
+
+    return grupos
+  }
+
+  async asignarAlicuotaGrupo(
+    adminId: string,
+    condominioId: string,
+    departamentos: string[],
+    porcentaje: number,
+  ) {
+    const admin = await this.getAdminWithCondominios(adminId)
+
+    const condominioObjectId = new Types.ObjectId(condominioId)
+
+    const condominioPermitido = admin.condominios.some((id) =>
+      id.equals(condominioObjectId),
+    )
+    if (!condominioPermitido) {
+      throw new ForbiddenException('No tienes acceso a este condominio')
+    }
+
+    const departamentosObjectId = departamentos.map(
+      (id) => new Types.ObjectId(id),
+    )
+
+    const departamentosDB = await this.departamentoModel.find({
+      _id: { $in: departamentosObjectId },
+      condominio: condominioObjectId,
+    })
+
+    console.log('Departamentos encontrados:', departamentosDB)
+
+    if (departamentosDB.length !== departamentos.length) {
+      throw new NotFoundException('Uno o más departamentos no son válidos')
+    }
+
+    await this.departamentoModel.updateMany(
+      { _id: { $in: departamentosObjectId } },
+      { $set: { alicuota: porcentaje } },
+    )
+
+    return { message: 'Alícuotas actualizadas correctamente' }
+  }
+
+  async crearGastoMensual(
+    adminId: string,
+    condominioId: string,
+    dto: CrearGastoMensualDto,
+  ) {
+    const admin = await this.getAdminWithCondominios(adminId)
+
+    const condominioObjectId = new Types.ObjectId(condominioId)
+
+    const permitido = admin.condominios.some((id) =>
+      id.equals(condominioObjectId),
+    )
+    if (!permitido) {
+      throw new ForbiddenException('No tienes acceso a este condominio')
+    }
+
+    const condominio = await this.condominioModel.findById(condominioObjectId)
+    if (!condominio) throw new NotFoundException('Condominio no encontrado')
+
+    // Parsear mes y año para validar duplicado
+    // Ejemplo mes: "agosto 2025"
+    const [nombreMes, anioStr] = dto.mes.toLowerCase().split(' ')
+    const meses = {
+      enero: 1,
+      febrero: 2,
+      marzo: 3,
+      abril: 4,
+      mayo: 5,
+      junio: 6,
+      julio: 7,
+      agosto: 8,
+      septiembre: 9,
+      octubre: 10,
+      noviembre: 11,
+      diciembre: 12,
+    }
+    const mesNum = meses[nombreMes]
+    const anioNum = parseInt(anioStr)
+
+    if (!mesNum || isNaN(anioNum)) {
+      throw new Error(
+        'Formato de mes inválido. Usa "mes año", ej: "agosto 2025"',
+      )
+    }
+
+    const existeGasto = condominio.gastosMensuales.some((g) => {
+      if (!g.mes) return false
+      const [mesExistente, anioExistente] = g.mes.toLowerCase().split(' ')
+      return mesExistente === nombreMes && parseInt(anioExistente) === anioNum
+    })
+
+    if (existeGasto) {
+      throw new ConflictException(
+        `Ya existe un gasto registrado para ${dto.mes}`,
+      )
+    }
+
+    const nuevoGasto = {
+      mes: dto.mes,
+      montoTotal: dto.montoTotal,
+      descripcion: dto.descripcion,
+      creadoEn: new Date(),
+    }
+
+    condominio.gastosMensuales.push(nuevoGasto)
+    await condominio.save()
+
+    return {
+      message: 'Gasto mensual registrado exitosamente',
+      gasto: nuevoGasto,
+    }
+  }
+
+  async obtenerGastoMensualActual(adminId: string, condominioId: string) {
+    const admin = await this.getAdminWithCondominios(adminId)
+
+    const condominioObjectId = new Types.ObjectId(condominioId)
+
+    // Verificar que el admin tiene acceso a ese condominio
+    const permitido = admin.condominios.some((id) =>
+      id.equals(condominioObjectId),
+    )
+    if (!permitido) {
+      throw new ForbiddenException('No tienes acceso a este condominio')
+    }
+
+    const condominio = await this.condominioModel.findById(condominioObjectId)
+    if (!condominio) throw new NotFoundException('Condominio no encontrado')
+
+    // Obtener mes y año actuales en formato "mes año" (ejemplo: "agosto 2025")
+    const mesActual = dayjs().format('MMMM YYYY').toLowerCase()
+
+    // Buscar gasto mensual que coincida con el mes actual
+    const gastoMesActual = condominio.gastosMensuales.find(
+      (gasto) => gasto.mes.toLowerCase() === mesActual,
+    )
+
+    if (!gastoMesActual) {
+      // Puedes retornar 0 o null o lanzar error según prefieras
+      return { mes: mesActual, montoTotal: 0, descripcion: null }
+    }
+
+    return {
+      mes: gastoMesActual.mes,
+      montoTotal: gastoMesActual.montoTotal,
+      descripcion: gastoMesActual.descripcion || null,
+    }
   }
 }
