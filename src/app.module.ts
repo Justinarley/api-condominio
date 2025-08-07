@@ -10,6 +10,7 @@ import { CondominiosModule } from './condominios/condominios.module'
 import { UsuariosModule } from './usuarios/usuarios.module'
 import { ReportesModule } from './reportes/reportes.module'
 import { DepartamentosModule } from './departamentos/departamentos.module';
+import { PagoAlicuotaModule } from './pago-alicuota/pago-alicuota.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { DepartamentosModule } from './departamentos/departamentos.module';
     UsuariosModule,
     ReportesModule,
     DepartamentosModule,
+    PagoAlicuotaModule,
   ],
   controllers: [AppController],
   providers: [AppService],

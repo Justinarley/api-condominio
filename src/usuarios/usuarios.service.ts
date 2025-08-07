@@ -14,7 +14,7 @@ import {
   DepartamentoDocument,
 } from '@/departamentos/departamento.schema'
 import { Condominio, CondominioDocument } from '@/condominios/condominio.schema'
-import * as dayjs from 'dayjs';
+import * as dayjs from 'dayjs'
 import 'dayjs/locale/es'
 
 dayjs.locale('es')
@@ -88,6 +88,10 @@ export class UsuariosService {
     const user = await this.userModel.findById(id).exec()
     if (!user) throw new NotFoundException('Usuario no encontrado')
     return user
+  }
+
+  async findByEmail(email: string): Promise<UserDocument | null> {
+    return this.userModel.findOne({ email }).exec()
   }
 
   async updateInfo(id: string, dto: UpdateInfoDto): Promise<UserDocument> {
@@ -275,12 +279,14 @@ export class UsuariosService {
         $project: {
           _id: 0,
           usuario: {
+            _id: `$_id`,
             name: '$name',
             email: '$email',
             phone: '$phone',
             vehicles: { $ifNull: ['$vehicles', []] },
           },
           departamento: {
+            _id: '$departamento._id',
             codigo: '$departamento.codigo',
             nombre: '$departamento.nombre',
             estado: '$departamento.estado',
@@ -297,10 +303,7 @@ export class UsuariosService {
                 input: '$condominio.gastosMensuales',
                 as: 'gasto',
                 cond: {
-                  $eq: [
-                    '$$gasto.mes',
-                    dayjs().format('MMMM YYYY'),
-                  ],
+                  $eq: ['$$gasto.mes', dayjs().format('MMMM YYYY')],
                 },
               },
             },

@@ -115,9 +115,6 @@ export class CreateResidentUserDto {
 }
 
 export class UpdateInfoDto {
-  @IsOptional()
-  @IsString()
-  name?: string
 
   @IsOptional()
   @IsEmail()
@@ -126,19 +123,6 @@ export class UpdateInfoDto {
   @IsOptional()
   @IsString()
   phone?: string
-
-  @IsOptional()
-  @IsEnum(IdentificationType)
-  identificationType?: IdentificationType
-
-  @IsOptional()
-  @IsString()
-  @Matches(/^\d{8,13}$/, { message: 'Tipo de identificación inválido' })
-  identificationNumber?: string
-
-  @IsOptional()
-  @IsEnum(UserRole)
-  role?: UserRole
 
   @IsOptional()
   @IsNumber()

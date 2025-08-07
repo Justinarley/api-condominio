@@ -1,11 +1,16 @@
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
-import { Injectable } from '@nestjs/common'
 import { verifyPassword } from '@/utils/password'
 import { AdminDocument } from '../admins/admin.schemas'
 import { AdminsService } from '../admins/admins.service'
 import { SuperAdminDocument } from '../super-admin/super-admin.schema'
 import { SuperAdminService } from '../super-admin/super-admin.service'
 import { UsuariosService } from '@/usuarios/usuarios.service'
+import { UserDocument } from '@/usuarios/usuarios.schema'
 
 @Injectable()
 export class AuthService {
@@ -30,11 +35,15 @@ export class AuthService {
 
     const admin: AdminDocument | null =
       await this.adminsService.findByEmail(email)
-    if (
-      admin &&
-      admin.status === 'active' &&
-      verifyPassword(password, admin.password)
-    ) {
+    if (admin) {
+      if (!verifyPassword(password, admin.password)) {
+        throw new UnauthorizedException('Credenciales incorrectas')
+      }
+
+      if (admin.status !== 'active') {
+        throw new UnauthorizedException('El administrador está inactivo')
+      }
+
       return {
         id: admin._id.toString(),
         email: admin.email,
@@ -43,8 +52,17 @@ export class AuthService {
       }
     }
 
-    const usuario = await this.usuariosService.validateUser(email, password)
-    if (usuario && usuario.status === 'active') {
+    const usuario: UserDocument | null =
+      await this.usuariosService.findByEmail(email)
+    if (usuario) {
+      if (!verifyPassword(password, usuario.password)) {
+        throw new UnauthorizedException('Credenciales incorrectas')
+      }
+
+      if (usuario.status !== 'active') {
+        throw new UnauthorizedException('El usuario está inactivo')
+      }
+
       return {
         id: usuario._id.toString(),
         email: usuario.email,
@@ -53,7 +71,7 @@ export class AuthService {
       }
     }
 
-    return null
+    throw new UnauthorizedException('Usuario no encontrado')
   }
 
   async login(user: any) {

@@ -18,10 +18,14 @@ import { CrearSolicitudDto, UpdateStatusDto } from '@/admins/dto/admins.dto'
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard'
 import { RolesGuard } from '@/auth/guards/roles.guard'
 import { Roles } from '@/auth/decoradors/roles.decorator'
+import { PagoAlicuotaService } from '@/pago-alicuota/pago-alicuota.service'
 
 @Controller('usuarios')
 export class UsuariosController {
-  constructor(private readonly usuariosService: UsuariosService) {}
+  constructor(
+    private readonly usuariosService: UsuariosService,
+    private readonly pagosService: PagoAlicuotaService,
+  ) {}
 
   @Post()
   async create(@Body() dto: CreateResidentUserDto) {
@@ -31,6 +35,13 @@ export class UsuariosController {
   @Get()
   async findAll() {
     return this.usuariosService.findAll()
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('propietario')
+  @Get('pagos-alicuota')
+  async getPagosPorUsuario(@Req() req) {
+    return this.pagosService.findByUsuario(req.user.id)
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

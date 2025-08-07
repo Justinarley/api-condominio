@@ -28,7 +28,7 @@ export class Departamento {
   @Prop({ type: String, required: true })
   grupo: string
 
-  @Prop({ required: true, min: 0, max: 1 })
+  @Prop({ min: 0, max: 1 })
   alicuota?: number
 }
 

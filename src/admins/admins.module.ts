@@ -9,6 +9,7 @@ import { AdminService } from './admin.service'
 import { CondominiosModule } from '@/condominios/condominios.module'
 import { DepartamentosModule } from '@/departamentos/departamentos.module'
 import { UsuariosModule } from '@/usuarios/usuarios.module'
+import { PagoAlicuotaModule } from '@/pago-alicuota/pago-alicuota.module'
 
 @Module({
   imports: [
@@ -16,7 +17,8 @@ import { UsuariosModule } from '@/usuarios/usuarios.module'
     JwtModule,
     CondominiosModule,
     DepartamentosModule,
-    UsuariosModule
+    UsuariosModule,
+    PagoAlicuotaModule,
   ],
   providers: [AdminsService, AdminService],
   controllers: [AdminsController, AdminController],

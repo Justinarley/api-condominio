@@ -18,24 +18,46 @@ import {
   CrearGastoMensualDto,
   UpdateInfoDto,
 } from './dto/admins.dto'
+import { PagoAlicuotaService } from '@/pago-alicuota/pago-alicuota.service'
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin')
 @Controller('admin')
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly pagoAlicuotaService: PagoAlicuotaService,
+  ) {}
 
-  // Nuevo endpoint: info de condominios asignados con departamentos
   @Get('condominios')
   async obtenerCondominiosConDepartamentos(
     @Req() req,
     @Query('condominioId') condominioId?: string,
   ) {
-    console.log('User desde token:', req.user)
     return this.adminService.obtenerCondominiosConDepartamentos(
       req.user.id,
       condominioId,
     )
+  }
+
+  @Get('pagos-pendientes')
+  async obtenerPagosPendientes(@Req() req) {
+    const adminId = req.user.id
+    return this.pagoAlicuotaService.findPagosPendientes(adminId)
+  }
+
+  @Get('pagos-todos')
+  async obtenerPagosPorAdmin(@Req() req) {
+    const adminId = req.user.id
+    return this.pagoAlicuotaService.findPagosPorAdmin(adminId)
+  }
+
+  @Put('pagos/:id/estado')
+  async actualizarEstadoPago(
+    @Param('id') pagoId: string,
+    @Body() body: { estado: 'pendiente' | 'pagado' | 'rechazado' },
+  ) {
+    return this.pagoAlicuotaService.actualizarEstadoPago(pagoId, body.estado)
   }
 
   @Get('usuarios-pendientes')

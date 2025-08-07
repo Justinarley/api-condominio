@@ -17,8 +17,12 @@ import {
 } from '../departamentos/departamento.schema'
 import { User, UserDocument } from '@/usuarios/usuarios.schema'
 import { CrearGastoMensualDto, UpdateInfoDto } from './dto/admins.dto'
-import * as dayjs from 'dayjs';
+import * as dayjs from 'dayjs'
 import 'dayjs/locale/es'
+import {
+  PagoAlicuota,
+  PagoAlicuotaDocument,
+} from '@/pago-alicuota/pago-alicuota.schema'
 
 dayjs.locale('es')
 
@@ -490,4 +494,5 @@ export class AdminService {
       descripcion: gastoMesActual.descripcion || null,
     }
   }
+
 }
