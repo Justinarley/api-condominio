@@ -213,58 +213,59 @@ export class UsuariosService {
     return { message: 'Solicitud enviada con éxito' }
   }
 
-  async getDashboardData(userId: string) {
-    const pipeline = [
-      // 1. Buscar al usuario propietario
-      { $match: { _id: new Types.ObjectId(userId), role: 'propietario' } },
+    async getDashboardData(userId: string) {
+      const pipeline = [
+        // 1. Buscar al usuario propietario
+        { $match: { _id: new Types.ObjectId(userId), role: 'propietario' } },
 
-      // 2. Traer el departamento
-      {
-        $lookup: {
-          from: 'departamentos',
-          localField: 'departamentoId',
-          foreignField: '_id',
-          as: 'departamento',
+        // 2. Traer el departamento
+        {
+          $lookup: {
+            from: 'departamentos',
+            localField: 'departamentoId',
+            foreignField: '_id',
+            as: 'departamento',
+          },
         },
-      },
-      { $unwind: '$departamento' },
+        { $unwind: '$departamento' },
 
-      // 3. Traer el condominio desde el departamento
-      {
-        $lookup: {
-          from: 'condominios',
-          localField: 'departamento.condominio',
-          foreignField: '_id',
-          as: 'condominio',
+        // 3. Traer el condominio desde el departamento
+        {
+          $lookup: {
+            from: 'condominios',
+            localField: 'departamento.condominio',
+            foreignField: '_id',
+            as: 'condominio',
+          },
         },
-      },
-      { $unwind: '$condominio' },
+        { $unwind: '$condominio' },
 
-      // 4. Traer el administrador desde la colección "admins"
-      {
-        $lookup: {
-          from: 'admins',
-          localField: 'condominio.adminId',
-          foreignField: '_id',
-          as: 'admin',
+        // 4. Traer el administrador desde la colección "admins"
+        {
+          $lookup: {
+            from: 'admins',
+            localField: 'condominio.adminId',
+            foreignField: '_id',
+            as: 'admin',
+          },
         },
-      },
-      { $unwind: '$admin' },
+        { $unwind: '$admin' },
 
-      // 5. Contar las solicitudes del usuario en las áreas comunes
-      {
-        $addFields: {
-          solicitudesCount: {
-            $sum: {
-              $map: {
-                input: '$condominio.areasComunes',
-                as: 'area',
-                in: {
-                  $size: {
-                    $filter: {
-                      input: '$$area.solicitudes',
-                      as: 'sol',
-                      cond: { $eq: ['$$sol.usuario', '$_id'] },
+        // 5. Contar las solicitudes del usuario en las áreas comunes
+        {
+          $addFields: {
+            solicitudesCount: {
+              $sum: {
+                $map: {
+                  input: '$condominio.areasComunes',
+                  as: 'area',
+                  in: {
+                    $size: {
+                      $filter: {
+                        input: '$$area.solicitudes',
+                        as: 'sol',
+                        cond: { $eq: ['$$sol.usuario', '$_id'] },
+                      },
                     },
                   },
                 },
@@ -272,54 +273,54 @@ export class UsuariosService {
             },
           },
         },
-      },
 
-      // 6. Proyección final
-      {
-        $project: {
-          _id: 0,
-          usuario: {
-            _id: `$_id`,
-            name: '$name',
-            email: '$email',
-            phone: '$phone',
-            vehicles: { $ifNull: ['$vehicles', []] },
-          },
-          departamento: {
-            _id: '$departamento._id',
-            codigo: '$departamento.codigo',
-            nombre: '$departamento.nombre',
-            estado: '$departamento.estado',
-            grupo: '$departamento.grupo',
-            alicuota: '$departamento.alicuota',
-          },
-          condominio: {
-            id: '$condominio.id',
-            name: '$condominio.name',
-            address: '$condominio.address',
-            tipo: '$condominio.tipo',
-            gastosMensuales: {
-              $filter: {
-                input: '$condominio.gastosMensuales',
-                as: 'gasto',
-                cond: {
-                  $eq: ['$$gasto.mes', dayjs().format('MMMM YYYY')],
+        // 6. Proyección final
+        {
+          $project: {
+            _id: 0,
+            usuario: {
+              _id: `$_id`,
+              name: '$name',
+              email: '$email',
+              phone: '$phone',
+              vehicles: { $ifNull: ['$vehicles', []] },
+            },
+            departamento: {
+              _id: '$departamento._id',
+              codigo: '$departamento.codigo',
+              nombre: '$departamento.nombre',
+              estado: '$departamento.estado',
+              grupo: '$departamento.grupo',
+              alicuota: '$departamento.alicuota',
+            },
+            condominio: {
+              id: '$condominio.id',
+              name: '$condominio.name',
+              address: '$condominio.address',
+              tipo: '$condominio.tipo',
+              gastosMensuales: {
+                $filter: {
+                  input: '$condominio.gastosMensuales',
+                  as: 'gasto',
+                  cond: {
+                    $eq: ['$$gasto.mes', dayjs().format('MMMM YYYY')],
+                  },
                 },
               },
             },
-          },
-          solicitudes: '$solicitudesCount',
-          administrador: {
-            name: '$admin.name',
-            email: '$admin.email',
-            phone: '$admin.phone',
+            solicitudes: '$solicitudesCount',
+            administrador: {
+              name: '$admin.name',
+              email: '$admin.email',
+              phone: '$admin.phone',
+            },
           },
         },
-      },
-    ]
+      ]
 
-    const result = await this.userModel.aggregate(pipeline).exec()
-    if (result.length === 0) throw new NotFoundException('Datos no encontrados')
-    return result[0]
-  }
+      const result = await this.userModel.aggregate(pipeline).exec()
+      if (result.length === 0) throw new NotFoundException('Datos no encontrados')
+      return result[0]
+    }
 }
+  

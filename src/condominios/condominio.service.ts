@@ -27,7 +27,7 @@ export class PublicCondominiosService {
     const data = await Promise.all(
       condominios.map(async (condominio) => {
         const departamentos = await this.departamentoModel
-          .find({ condominio: condominio._id })
+          .find({ condominio: condominio._id, estado: 'disponible' })
           .select('codigo nombre')
           .lean()
           .exec()

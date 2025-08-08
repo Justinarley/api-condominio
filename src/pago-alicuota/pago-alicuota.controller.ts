@@ -37,22 +37,9 @@ export class PagoAlicuotaController {
     return this.pagoService.create(dto)
   }
 
-  @Get('departamento')
-  findByDepartamento(@Query('id') id: string) {
-    return this.pagoService.findByDepartamento(id)
-  }
-
   @Get('mes')
   findByMes(@Query('mes') mes: string) {
     return this.pagoService.findByMes(mes)
-  }
-
-  @Get('departamento/estado')
-  findByDepartamentoYEstado(
-    @Query('departamentoId') departamentoId: string,
-    @Query('estado') estado?: string,
-  ) {
-    return this.pagoService.findByDepartamentoYEstado(departamentoId, estado)
   }
 
   @Get('usuario')

@@ -26,17 +26,34 @@ export class CondominiosService {
     private readonly departamentosService: DepartamentosService,
   ) {}
 
+  // Método create en el servicio
+
   async create(dto: CreateCondominioDto): Promise<Condominio> {
-    // Validar existencia condominio ID
-    const exists = await this.condominioModel.findOne({ id: dto.id }).exec()
-    if (exists)
-      throw new ConflictException('Ya existe un condominio con ese ID')
+    // Buscar último condominio con id tipo "CND-XXX"
+    const ultimoCondominio = await this.condominioModel
+      .findOne({ id: /^CND-\d{3}$/ })
+      .sort({ id: -1 })
+      .exec()
+
+    let nuevoNumero = 1
+    if (ultimoCondominio && ultimoCondominio.id) {
+      const numeroActual = parseInt(ultimoCondominio.id.replace('CND-', ''), 10)
+      if (!isNaN(numeroActual)) {
+        nuevoNumero = numeroActual + 1
+      }
+    }
+
+    // Generar nuevo ID con ceros a la izquierda
+    const nuevoId = `CND-${String(nuevoNumero).padStart(3, '0')}`
+
+    // Asignar nuevo ID al DTO
+    dto.id = nuevoId
 
     // Validar admin
     const admin = await this.adminModel.findById(dto.adminId).exec()
     if (!admin) throw new NotFoundException('Admin no encontrado')
 
-    // Crear condominio sin departamentos todavía
+    // Crear condominio
     const condominioData: Partial<Condominio> = {
       id: dto.id,
       name: dto.name,
@@ -118,7 +135,7 @@ export class CondominiosService {
     })
 
     return savedCondominio
-  }
+  } 
 
   async findAll(condominioId?: string): Promise<CondominioDocument[]> {
     const filter: any = {}

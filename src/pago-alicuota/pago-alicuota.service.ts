@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
 import { InjectModel } from '@nestjs/mongoose'
-import { Model } from 'mongoose'
+import { Model, Types } from 'mongoose'
 import { PagoAlicuota, PagoAlicuotaDocument } from './pago-alicuota.schema'
 import { CreatePagoDto } from './dto/pago-alicuota'
 import {
@@ -25,13 +25,10 @@ export class PagoAlicuotaService {
   async create(dto: CreatePagoDto) {
     return this.pagoModel.create({
       ...dto,
+      departamento: new Types.ObjectId(dto.departamento),
+      pagadoPor: new Types.ObjectId(dto.pagadoPor),
       fechaPago: new Date(),
     })
-  }
-
-  // Buscar pagos por departamento
-  async findByDepartamento(departamentoId: string) {
-    return this.pagoModel.find({ departamento: departamentoId }).exec()
   }
 
   // Buscar pagos por mes
@@ -39,18 +36,11 @@ export class PagoAlicuotaService {
     return this.pagoModel.find({ mes }).exec()
   }
 
-  // Buscar pagos por departamento y estado (estado es opcional)
-  async findByDepartamentoYEstado(departamentoId: string, estado?: string) {
-    const filtro: any = { departamento: departamentoId }
-    if (estado) {
-      filtro.estado = estado
-    }
-    return this.pagoModel.find(filtro).exec()
-  }
-
   // Buscar pagos hechos por un usuario (propietario)
   async findByUsuario(usuarioId: string) {
-    return this.pagoModel.find({ pagadoPor: usuarioId }).exec()
+    return this.pagoModel
+      .find({ pagadoPor: new Types.ObjectId(usuarioId) })
+      .exec()
   }
 
   async findPagosPendientes(adminId: string) {
