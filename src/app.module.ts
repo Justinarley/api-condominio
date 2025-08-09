@@ -12,6 +12,7 @@ import { ReportesModule } from './reportes/reportes.module'
 import { DepartamentosModule } from './departamentos/departamentos.module';
 import { PagoAlicuotaModule } from './pago-alicuota/pago-alicuota.module';
 import { PdfModule } from './pdf/pdf.module';
+import { AccesosModule } from './accesos/accesos.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { PdfModule } from './pdf/pdf.module';
     DepartamentosModule,
     PagoAlicuotaModule,
     PdfModule,
+    AccesosModule,
   ],
   controllers: [AppController],
   providers: [AppService],

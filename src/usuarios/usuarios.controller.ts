@@ -52,6 +52,13 @@ export class UsuariosController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('guardia')
+  @Get('dashboard-guardia')
+  async getDashboardDataGuardia(@Req() req) {
+    return this.usuariosService.getDashboardDataGuardia(req.user.id)
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('propietario')
   @Get('areas-comunes')
   async obtenerAreasComunes(@Req() req) {
